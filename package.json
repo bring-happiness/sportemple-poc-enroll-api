@@ -1,0 +1,36 @@
+{
+  "name": "sportemple-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \\\"Error: no files specified\\\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bring-happiness/sportemple-api.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bring-happiness/sportemple-api/issues"
+  },
+  "homepage": "https://github.com/bring-happiness/sportemple-api#readme",
+  "dependencies": {
+    "atob": "^2.1.2",
+    "axios": "^0.21.1",
+    "body-parser": "^1.19.0",
+    "dotenv": "^8.1.0",
+    "express": "^4.17.1",
+    "express-fileupload": "^1.2.1",
+    "helmet": "^3.21.1",
+    "moment": "^2.24.0",
+    "mongodb": "^3.3.2",
+    "redis": "^3.0.2",
+    "socket.io": "^2.4.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  }
+}
