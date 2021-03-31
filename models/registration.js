@@ -3,15 +3,23 @@ const objectId = require('mongodb').ObjectId
 
 const COLLECTION_NAME = 'registration';
 
+const STATUSES = [
+  'INIT',
+  'OK',
+  'KO',
+  'NEED_CHANGE'
+]
+
 class Registration {
-  constructor({civility, firstname, lastname, dateOfBirth, nationality, postalAddress, postalCode, city,
+  constructor({ civility, firstname, lastname, dateOfBirth, nationality, postalAddress, postalCode, city,
                 country, phone, email, pictureAllowed, informationsEmailAllowed, informationsSmsAllowed,
                 partnersAllowed, bookingConfirmAllowed, pass92Allowed, proofPaymentAllowed, alreadyLicenced,
                 lisence, sportYear, clubLisenced, studientCheck, studientCheckFilePath, proofResidenceFilPath,
-                medicalCertificateFilePath
+                medicalCertificateFilePath, stripeSessionId
               }) {
     this._id = null;
 
+    this.status = STATUSES[0];
     this.civility = civility;
     this.lastname = lastname;
     this.firstname = firstname;
@@ -38,6 +46,7 @@ class Registration {
     this.studientCheckFilePath = studientCheckFilePath;
     this.proofResidenceFilPath = proofResidenceFilPath;
     this.medicalCertificateFilePath = medicalCertificateFilePath;
+    this.stripeSessionId = stripeSessionId;
   }
 
   static async getAll() {
@@ -48,10 +57,30 @@ class Registration {
       .toArray()
   }
 
+  static async getOneById(id) {
+    const db = getDb();
+    return db.collection(COLLECTION_NAME)
+      .findOne({"_id": objectId(id)});
+  }
+
   static async getOneByUsername(username) {
     const db = getDb();
     return db.collection(COLLECTION_NAME)
       .findOne({username: username});
+  }
+
+  static async updateStatus(id, status) {
+    const db = getDb();
+    return db.collection(COLLECTION_NAME)
+      .updateOne(
+        { _id: objectId(id) },
+        {
+          $set:
+            {
+              status: status
+            }
+        }
+      );
   }
 
   async save() {

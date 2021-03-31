@@ -9,11 +9,11 @@ const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const {mongoConnect, getDb} = require('./utils/database');
 const fs = require('fs');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const Registration = require('./models/registration');
 
 mongoConnect(() => {
-  console.log(__dirname)
   app.use('/files', express.static(__dirname + '/files'));
 
   app.use(bodyParser.urlencoded({extended: false}));
@@ -33,6 +33,41 @@ mongoConnect(() => {
   const sockets = []
   const db = getDb();
 
+  app.post('/user', async (req, res) => {
+    const customer = await stripe.customers.create({
+      email: 'test@test.com'
+    })
+
+    res.send(customer.id);
+  });
+
+  /* app.get('/checkout-session', async (req, res) => {
+    const session = await stripe.checkout.sessions.create({
+      success_url: 'http://localhost:8080/success?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: 'http://localhost:8080',
+      payment_method_types: ['card'],
+      mode: 'payment',
+      line_items: [
+        {
+          price_data: {
+            product_data: {
+              name: 'Adhésion jeu libre mars-août',
+              images: [
+                'https://images.unsplash.com/photo-1558365849-6ebd8b0454b2?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=634&q=80'
+              ]
+            },
+            unit_amount: 31500,
+            currency: 'eur'
+          },
+          quantity: 1
+        }
+      ]
+    })
+
+    // Save the Session Id in User collection
+    res.send(session.id);
+  }); */
+
   app.get('/user/:username', async (req, res) => {
     //const user = await User.getOneByUsername(req.params.username);
     //res.send(user);
@@ -44,22 +79,47 @@ mongoConnect(() => {
     res.send(allRegistrations);
   });
 
-  app.get('/center/registration/:email', async (req, res) => {
-    const allRegistrations = await Registration.getAll();
+  app.get('/center/registration/payment-status/:sessionId', async (req, res) => {
+    const session = await stripe.checkout.sessions.retrieve(req.params.sessionId)
 
-    res.send(allRegistrations);
+    res.send(session);
+  });
+
+  app.post('/center/registration/status', async (req, res) => {
+    const registration = await Registration.updateStatus(req.body.id, req.body.status);
+
+    res.send(registration);
   });
 
   app.post('/center/registration', async (req, res) => {
-
-    // console.log(req.body.civility)
-
-    if (!req.files || Object.keys(req.files).length === 0) {
+    /* if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).send('No files were uploaded.');
-    }
+    } */
+
+    const stripeSession = await stripe.checkout.sessions.create({
+      success_url: 'http://localhost:8080/success?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: 'http://localhost:8080',
+      payment_method_types: ['card'],
+      mode: 'payment',
+      line_items: [
+        {
+          price_data: {
+            product_data: {
+              name: 'Adhésion jeu libre mars-août',
+              images: [
+                'https://images.unsplash.com/photo-1558365849-6ebd8b0454b2?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=634&q=80'
+              ]
+            },
+            unit_amount: 31500,
+            currency: 'eur'
+          },
+          quantity: 1
+        }
+      ]
+    })
 
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
-    const filesName = ['studientCheckFile', 'proofResidence', 'medicalCertificate'];
+    const filesName = ['studentFile', 'proofResidence', 'medicalCertificate'];
     let filePath = {};
 
     let numberFilesUploaded = 0;
@@ -68,8 +128,12 @@ mongoConnect(() => {
       let sampleFile;
       let uploadPath = 'files/registration/' + req.body.email + '/';
 
+      if (!req.files || req.files[fileName] === undefined) {
+        return;
+      }
 
       sampleFile = req.files[fileName];
+
       fs.existsSync(uploadPath) || fs.mkdirSync(uploadPath);
 
       filePath[fileName] = uploadPath + sampleFile.name;
@@ -109,15 +173,16 @@ mongoConnect(() => {
       lisence: req.body.lisence,
       sportYear: req.body.sportYear,
       clubLisenced: req.body.clubLisenced,
-      studientCheck: req.body.studientCheck,
-      studientCheckFilePath:  filePath['studientCheckFile'],
+      isStudent: req.body.isStudent,
+      studientCheckFilePath:  filePath['studentFile'],
       proofResidenceFilPath: filePath['proofResidence'],
       medicalCertificateFilePath: filePath['medicalCertificate'],
+      stripeSessionId: stripeSession.id
     });
 
     await registration.save();
 
-    res.send(numberFilesUploaded + ' file(s) uploaded!');
+    res.send(registration);
   });
 
 
