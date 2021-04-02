@@ -97,8 +97,8 @@ mongoConnect(() => {
     } */
 
     const stripeSession = await stripe.checkout.sessions.create({
-      success_url: 'http://localhost:8080/success?session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: 'http://localhost:8080',
+      success_url: `${process.env.SPORTEMPLE_ENROLL_WEB_URL}/registration/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.SPORTEMPLE_ENROLL_WEB_URL}`,
       payment_method_types: ['card'],
       mode: 'payment',
       line_items: [
@@ -110,7 +110,7 @@ mongoConnect(() => {
                 'https://images.unsplash.com/photo-1558365849-6ebd8b0454b2?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=634&q=80'
               ]
             },
-            unit_amount: 31500,
+            unit_amount: 15800,
             currency: 'eur'
           },
           quantity: 1
